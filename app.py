@@ -1,58 +1,107 @@
-import streamlit as st
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EV走行距離シミュレーター</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    label { display: block; margin-top: 12px; }
+    select, input { padding: 6px; margin-top: 4px; width: 260px; }
+    .result { margin-top: 20px; font-size: 1.2rem; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>EV走行距離シミュレーター</h1>
 
-st.set_page_config(page_title="EX30 充電→走行距離シミュレーター", layout="centered")
+  <label>
+    車種プリセットを選択してください
+    <select id="carPreset">
+      <option value="">選択してください</option>
+      <option value="EX30">Volvo EX30（51kWh / 16.7kWh/100km）</option>
+      <option value="EQB">Mercedes-Benz EQB（66.5kWh / 18.1kWh/100km）</option>
+      <option value="e208">Peugeot e-208（50kWh / 15.4kWh/100km）</option>
+      <option value="Tesla3">Tesla Model 3 RWD（57.5kWh / 14.9kWh/100km）</option>
+      <option value="Leaf">Nissan Leaf（40kWh / 18.0kWh/100km）</option>
+      <option value="Ariya">Nissan Ariya（66kWh / 18.2kWh/100km）</option>
+    </select>
+  </label>
 
-st.title("EX30 充電→走行距離シミュレーター")
+  <label>
+    バッテリー容量（kWh）
+    <input id="battery" type="number" />
+  </label>
 
-# ---------------------------
-# 1. 充電器の選択
-# ---------------------------
-st.subheader("充電器を選んでください")
-charger = st.radio("充電器出力 (kW)", options=[150, 90, 50, 30], index=0)
+  <label>
+    100kmあたりの消費電力量（kWh/100km）
+    <input id="consumption" type="number" step="0.1" />
+  </label>
 
-# ---------------------------
-# 2. 充電時間の入力
-# ---------------------------
-minutes = st.number_input("充電時間（分）", min_value=1.0, value=15.0, step=1.0)
+  <label>
+    充電器の出力を、お選びください（kW）
+    <select id="charger">
+      <option value="3">3kW（普通充電）</option>
+      <option value="6">6kW（普通充電）</option>
+      <option value="50">50kW（急速）</option>
+      <option value="90">90kW（急速）</option>
+      <option value="150">150kW（急速）</option>
+    </select>
+  </label>
 
-# ---------------------------
-# ■ 内部計算パラメータ（表示のみ）
-# ---------------------------
-with st.expander("車両・計算パラメータ（参考値・変更不可）", expanded=False):
-    st.write("・バッテリー容量（kWh）: 69.0")
-    st.write("・公表航続距離（km）: 480")
-    st.write("・実走想定の電費（kWh/100km）: 16.7")
-    st.write("・充電効率（損失を考慮）: 0.90")
+  <label>
+    充電時間（時間）
+    <input id="hours" type="number" step="0.1" />
+  </label>
 
-battery_kwh = 69.0
-wltp_km = 480.0
-real_consumption = 16.7
-efficiency = 0.90
-wltp_consumption = 100 * battery_kwh / wltp_km
+  <div class="result" id="resultRange"></div>
 
-# ---------------------------
-# 計算
-# ---------------------------
-energy_in = charger * (minutes / 60) * efficiency
-wltp_km_per_kwh = 100 / wltp_consumption
+  <script>
+    const presetData = {
+      EX30: { battery: 51, consumption: 16.7 },
+      EQB: { battery: 66.5, consumption: 18.1 },
+      e208: { battery: 50, consumption: 15.4 },
+      Tesla3: { battery: 57.5, consumption: 14.9 },
+      Leaf: { battery: 40, consumption: 18.0 },
+      Ariya: { battery: 66, consumption: 18.2 }
+    };
 
-theory_km = energy_in * wltp_km_per_kwh
-real_km = energy_in * (100 / real_consumption)
+    const carPreset = document.getElementById("carPreset");
+    const battery = document.getElementById("battery");
+    const consumption = document.getElementById("consumption");
+    const charger = document.getElementById("charger");
+    const hours = document.getElementById("hours");
+    const resultRange = document.getElementById("resultRange");
 
-# ---------------------------
-# 3. 走行距離予測（メイン表示）
-# ---------------------------
-st.markdown("---")
-st.subheader("走行距離予測（目安）")
-st.write(f"- **WLTP換算（公表値ベース）**: {theory_km:.1f} km")
-st.write(f"- **実走想定**: {real_km:.1f} km")
+    carPreset.addEventListener("change", () => {
+      const key = carPreset.value;
+      if (presetData[key]) {
+        battery.value = presetData[key].battery;
+        consumption.value = presetData[key].consumption;
+      }
+      calculate();
+    });
 
-# ---------------------------
-# 4. 結果（目安）
-# ---------------------------
-st.markdown("---")
-st.subheader("計算に使った値（参考）")
-st.write(f"- 充電器出力: **{charger} kW**")
-st.write(f"- 充電時間: **{minutes} 分**")
-st.write(f"- 充電効率: **{efficiency:.2f}**")
-st.write(f"- 推定で車に入る電力量: **{energy_in:.2f} kWh**")
+    [battery, consumption, charger, hours].forEach(el => {
+      el.addEventListener("input", calculate);
+    });
+
+    function calculate() {
+      const bat = parseFloat(battery.value);
+      const cons = parseFloat(consumption.value);
+      const pow = parseFloat(charger.value);
+      const h = parseFloat(hours.value);
+
+      if (isNaN(bat) || isNaN(cons) || isNaN(pow) || isNaN(h)) {
+        resultRange.textContent = "";
+        return;
+      }
+
+      const chargedEnergy = pow * h;
+      const available = Math.min(chargedEnergy, bat);
+      const range = (available / cons) * 100;
+
+      resultRange.textContent = `推定走行距離：${range.toFixed(1)} km`;
+    }
+  </script>
+</body>
+</html>
