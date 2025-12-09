@@ -1,81 +1,104 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>EV走行距離シミュレーター</title>
-  <style>
-    body { font-family: sans-serif; padding: 20px; background: #f7f7f7; }
-    label { display: block; margin-top: 14px; font-weight: bold; }
-    select, input { padding: 8px; margin-top: 6px; width: 260px; }
-    h1 { margin-bottom: 6px; }
-    .unit { padding-left: 6px; }
-    .result {
-      margin-top: 24px;
-      font-size: 1.4rem;
-      font-weight: bold;
-      background: white;
-      padding: 14px;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      width: 280px;
-    }
-  </style>
-</head>
-<body>
-  <h1>EV走行距離シミュレーター</h1>
+import streamlit as st
 
-  <!-- 車種プリセット -->
-  <label>
-    車種プリセットを選択してください
-    <select id="carPreset">
-      <option value="">選択してください</option>
-      <option value="EX30">Volvo EX30（51kWh / 16.7kWh/100km）</option>
-      <option value="EQB">Mercedes-Benz EQB（66.5kWh / 18.1kWh/100km）</option>
-      <option value="e208">Peugeot e-208（50kWh / 15.4kWh/100km）</option>
-      <option value="Tesla3">Tesla Model 3 RWD（57.5kWh / 14.9kWh/100km）</option>
-      <option value="Leaf">Nissan Leaf（40kWh / 18.0kWh/100km）</option>
-      <option value="Ariya">Nissan Ariya（66kWh / 18.2kWh/100km）</option>
-    </select>
-  </label>
+st.set_page_config(page_title="EV走行距離シミュレーター", layout="centered")
 
-  <!-- バッテリー容量 -->
-  <label>
-    バッテリー容量（kWh）
-    <input id="battery" type="number" />
-  </label>
+# -------------------------------
+# CSS（エラーが出ない安全な方法）
+# -------------------------------
+st.markdown("""
+<style>
+body {
+    font-family: sans-serif;
+}
+.title {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+.section-label {
+    margin-top: 20px;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+.result-box {
+    margin-top: 25px;
+    padding: 15px;
+    background: #f0f0f0;
+    border-radius: 10px;
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+</style>
+""", unsafe_allow_html=True)
 
-  <!-- 消費電力量 -->
-  <label>
-    100kmあたりの消費電力量（kWh/100km）
-    <input id="consumption" type="number" step="0.1" />
-  </label>
+# -------------------------------
+# タイトル
+# -------------------------------
+st.markdown("<div class='title'>EV走行距離シミュレーター</div>", unsafe_allow_html=True)
 
-  <!-- 充電器出力 -->
-  <label>
-    充電器の出力を、お選びください（kW）
-    <select id="charger">
-      <option value="3">3kW（普通充電）</option>
-      <option value="6">6kW（普通充電）</option>
-      <option value="50">50kW（急速）</option>
-      <option value="90">90kW（急速）</option>
-      <option value="150">150kW（急速）</option>
-    </select>
-  </label>
+# -------------------------------
+# 車種プリセット
+# -------------------------------
+st.markdown("<div class='section-label'>車種プリセットを選択してください</div>", unsafe_allow_html=True)
 
-  <!-- 充電時間（分） -->
-  <label>
-    充電時間（分）
-    <input id="minutes" type="number" step="1" min="1" />
-  </label>
+preset = st.selectbox(
+    "",
+    (
+        "選択してください",
+        "Volvo EX30（51kWh / 16.7）",
+        "Mercedes-Benz EQB（66.5kWh / 18.1）",
+        "Peugeot e-208（50kWh / 15.4）",
+        "Tesla Model 3 RWD（57.5kWh / 14.9）",
+        "Nissan Leaf（40kWh / 18.0）",
+        "Nissan Ariya（66kWh / 18.2）"
+    )
+)
 
-  <div class="result" id="resultRange"></div>
+preset_data = {
+    "Volvo EX30（51kWh / 16.7）": (51, 16.7),
+    "Mercedes-Benz EQB（66.5kWh / 18.1）": (66.5, 18.1),
+    "Peugeot e-208（50kWh / 15.4）": (50, 15.4),
+    "Tesla Model 3 RWD（57.5kWh / 14.9）": (57.5, 14.9),
+    "Nissan Leaf（40kWh / 18.0）": (40, 18.0),
+    "Nissan Ariya（66kWh / 18.2）": (66, 18.2),
+}
 
-  <script>
-    // プリセット値
-    const presetData = {
-      EX30: { battery: 51, consumption: 16.7 },
-      EQB: { battery: 66.5, consumption: 18.1 },
-      e208: { battery: 50, consumption: 15.4 },
-      Tesla3: { battery: 57.5, consumption: 14.9 },
-      Leaf: {
+# -------------------------------
+# プリセット反映
+# -------------------------------
+if preset in preset_data:
+    battery_default, consumption_default = preset_data[preset]
+else:
+    battery_default, consumption_default = 50, 16.0  # デフォルト
+
+# -------------------------------
+# 車両パラメータ入力（編集可）
+# -------------------------------
+st.markdown("<div class='section-label'>車両パラメータ</div>", unsafe_allow_html=True)
+
+battery = st.number_input("バッテリー容量（kWh）", value=battery_default, step=0.1)
+consumption = st.number_input("100kmあたりの消費電力量（kWh/100km）", value=consumption_default, step=0.1)
+
+# -------------------------------
+# 充電器選択
+# -------------------------------
+st.markdown("<div class='section-label'>充電器の出力を、お選びください（kW）</div>", unsafe_allow_html=True)
+
+charger = st.selectbox("", [3, 6, 50, 90, 150])
+
+# -------------------------------
+# 充電時間（分入力）
+# -------------------------------
+minutes = st.number_input("充電時間（分）", min_value=1, value=30, step=1)
+
+# -------------------------------
+# 計算
+# -------------------------------
+hours = minutes / 60
+charged_energy = charger * hours
+available_energy = min(charged_energy, battery)
+estimated_range = (available_energy / consumption) * 100
+
+# -------------------------------
+# 結果表示
+# -------------------------------
+st.markdown("<div class='result-box'>推定走行距離： {:.1f} km</div>".format(estimated_range), unsafe_allow_html=True)
