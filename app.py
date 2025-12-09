@@ -1,104 +1,68 @@
 import streamlit as st
 
-st.set_page_config(page_title="EV走行距離シミュレーター", layout="centered")
+# ===========================
+# 車種プリセット
+# ===========================
+vehicle_presets = {
+    "Volvo EX30（51kWh / 16.7kWh/100km）": {"battery": 51.0, "efficiency": 16.7},
+    "Nissan Leaf（40kWh / 15.0）": {"battery": 40.0, "efficiency": 15.0},
+    "Nissan Ariya（66kWh / 18.0）": {"battery": 66.0, "efficiency": 18.0},
+    "Tesla Model 3 SR（57.5kWh / 14.5）": {"battery": 57.5, "efficiency": 14.5},
+    "Mercedes EQB（66.5kWh / 18.1）": {"battery": 66.5, "efficiency": 18.1},
+    "Peugeot e-208（50kWh / 15.9）": {"battery": 50.0, "efficiency": 15.9},
+}
 
-# -------------------------------
-# CSS（エラーが出ない安全な方法）
-# -------------------------------
+# ===========================
+# UI のスタイル
+# ===========================
 st.markdown("""
 <style>
-body {
-    font-family: sans-serif;
-}
-.title {
-    font-size: 2rem;
-    margin-bottom: 1rem;
-}
-.section-label {
-    margin-top: 20px;
-    font-weight: bold;
-    font-size: 1.1rem;
-}
-.result-box {
-    margin-top: 25px;
-    padding: 15px;
-    background: #f0f0f0;
-    border-radius: 10px;
-    font-size: 1.2rem;
-    font-weight: bold;
-}
+body { font-family: sans-serif; }
 </style>
 """, unsafe_allow_html=True)
 
-# -------------------------------
+# ===========================
 # タイトル
-# -------------------------------
-st.markdown("<div class='title'>EV走行距離シミュレーター</div>", unsafe_allow_html=True)
+# ===========================
+st.title("EV走行距離シミュレーター")
 
-# -------------------------------
+# ===========================
 # 車種プリセット
-# -------------------------------
-st.markdown("<div class='section-label'>車種プリセットを選択してください</div>", unsafe_allow_html=True)
+# ===========================
+selected = st.selectbox("車種プリセットを選択してください", list(vehicle_presets.keys()))
+preset = vehicle_presets[selected]
 
-preset = st.selectbox(
-    "",
-    (
-        "選択してください",
-        "Volvo EX30（51kWh / 16.7）",
-        "Mercedes-Benz EQB（66.5kWh / 18.1）",
-        "Peugeot e-208（50kWh / 15.4）",
-        "Tesla Model 3 RWD（57.5kWh / 14.9）",
-        "Nissan Leaf（40kWh / 18.0）",
-        "Nissan Ariya（66kWh / 18.2）"
-    )
+# float() で必ず数値型に矯正（今回のエラーの解決ポイント）
+battery_default = float(preset["battery"])
+eff_default = float(preset["efficiency"])
+
+# ===========================
+# 車両パラメータ
+# ===========================
+st.subheader("車両パラメータ")
+battery = st.number_input("バッテリー容量（kWh）", value=battery_default, step=0.1)
+eff = st.number_input("電費（kWh/100km）", value=eff_default, step=0.1)
+
+# ===========================
+# 充電設定
+# ===========================
+st.subheader("充電設定")
+charger_power = st.selectbox(
+    "充電器の出力を、お選びください",
+    [3, 6, 20, 50, 90, 150, 350]
 )
 
-preset_data = {
-    "Volvo EX30（51kWh / 16.7）": (51, 16.7),
-    "Mercedes-Benz EQB（66.5kWh / 18.1）": (66.5, 18.1),
-    "Peugeot e-208（50kWh / 15.4）": (50, 15.4),
-    "Tesla Model 3 RWD（57.5kWh / 14.9）": (57.5, 14.9),
-    "Nissan Leaf（40kWh / 18.0）": (40, 18.0),
-    "Nissan Ariya（66kWh / 18.2）": (66, 18.2),
-}
+charge_minutes = st.number_input("充電時間（分）", min_value=0, step=1)
 
-# -------------------------------
-# プリセット反映
-# -------------------------------
-if preset in preset_data:
-    battery_default, consumption_default = preset_data[preset]
-else:
-    battery_default, consumption_default = 50, 16.0  # デフォルト
-
-# -------------------------------
-# 車両パラメータ入力（編集可）
-# -------------------------------
-st.markdown("<div class='section-label'>車両パラメータ</div>", unsafe_allow_html=True)
-
-battery = st.number_input("バッテリー容量（kWh）", value=battery_default, step=0.1)
-consumption = st.number_input("100kmあたりの消費電力量（kWh/100km）", value=consumption_default, step=0.1)
-
-# -------------------------------
-# 充電器選択
-# -------------------------------
-st.markdown("<div class='section-label'>充電器の出力を、お選びください（kW）</div>", unsafe_allow_html=True)
-
-charger = st.selectbox("", [3, 6, 50, 90, 150])
-
-# -------------------------------
-# 充電時間（分入力）
-# -------------------------------
-minutes = st.number_input("充電時間（分）", min_value=1, value=30, step=1)
-
-# -------------------------------
+# ===========================
 # 計算
-# -------------------------------
-hours = minutes / 60
-charged_energy = charger * hours
-available_energy = min(charged_energy, battery)
-estimated_range = (available_energy / consumption) * 100
+# ===========================
+charge_hours = charge_minutes / 60
+energy_added = charger_power * charge_hours
+possible_km = (energy_added / eff) * 100
 
-# -------------------------------
-# 結果表示
-# -------------------------------
-st.markdown("<div class='result-box'>推定走行距離： {:.1f} km</div>".format(estimated_range), unsafe_allow_html=True)
+# ===========================
+# 表示
+# ===========================
+st.subheader("走行距離予測")
+st.write(f"**約 {possible_km:.1f} km 走行可能**（入力した充電時間に基づく計算）")
