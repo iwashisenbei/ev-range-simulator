@@ -1,7 +1,7 @@
 import streamlit as st
 
 # ===========================
-# 車種プリセット (分類修正: Hyundaiを「輸入車」に移動)
+# 車種プリセット (変更なし)
 # ===========================
 vehicle_presets = {
     "国産車": {
@@ -31,7 +31,7 @@ vehicle_presets = {
             "i4 eDrive40": {"battery": 83.9, "efficiency": 16.7},
             "iX3 M Sport": {"battery": 80.0, "efficiency": 17.5},
         },
-        "Hyundai": { # 韓国メーカーのため輸入車に移動
+        "Hyundai": {
             "IONIQ 5 (Voyage)": {"battery": 58.0, "efficiency": 15.6},
         },
         "Jaguar": {
@@ -68,31 +68,42 @@ vehicle_presets = {
 }
 
 # ===========================
-# UI のスタイル
+# UI のスタイル (タイトル改行抑制と余白の極限削減)
 # ===========================
 st.markdown("""
 <style>
-body { font-family: sans-serif; }
+/* タイトルのフォントサイズを調整し、改行を防ぐ */
+h1 {
+    font-size: 2.1rem; /* 標準より少し小さく */
+    white-space: nowrap; /* 強制的に改行させない */
+}
+/* subheaderやst.titleの上下の余白を極限まで減らす */
+.st-emotion-cache-10trblm { 
+    padding-top: 0rem !important;
+    padding-bottom: 0.5rem !important;
+}
+.st-emotion-cache-z5rd5k { 
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+}
 /* st.radio の縦の隙間を減らす */
 div[data-testid="stRadio"] label {
     margin: 0 !important;
 }
 div[data-testid="stRadio"] > div {
-    gap: 0.5rem; /* ボタン間のスペース調整 */
-}
-/* subheaderの上下の余白を減らして高さを詰める */
-.st-emotion-cache-10trblm { 
-    padding-top: 0rem !important;
-    padding-bottom: 0.5rem !important;
-}
-/* 全体の余白を減らす（特にモバイル対応） */
-.st-emotion-cache-z5rd5k { 
-    padding-top: 1rem !important;
+    gap: 0.5rem;
 }
 /* selectboxのラベル表示を隠す (コンパクト化のため) */
 label[data-testid="stWidgetLabel"] {
     font-size: 0.9em;
     margin-bottom: 0.1rem;
+}
+/* 走行距離予測の結果（st.metric）のラベルと値の余白を詰める */
+[data-testid="stMetricLabel"] {
+    padding-bottom: 0px !important;
+}
+[data-testid="stMetricValue"] {
+    padding-top: 0px !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -110,17 +121,15 @@ eff_default = 15.0
 # ===========================
 # 1. 車種プリセット (3段階選択)
 # ===========================
-st.subheader("1. 車種プリセットを選択")
+st.markdown("##### 1. 車種プリセットを選択") # st.subheaderの代わりにmarkdownで高さを詰める
 
-# 選択肢を全て3列の横並びにして高さを詰める
 col1, col2, col3 = st.columns(3)
 
-# 1-1. 分類選択 (国産車/輸入車)
+# 1-1. 分類選択
 with col1:
     category_list = list(vehicle_presets.keys())
     selected_category = st.selectbox("分類", category_list, key="select_category")
 
-# 選択された分類に基づくブランドリストの取得
 selected_brands_data = vehicle_presets.get(selected_category, {})
 brand_list = sorted(list(selected_brands_data.keys()))
 
@@ -128,7 +137,6 @@ brand_list = sorted(list(selected_brands_data.keys()))
 with col2:
     selected_brand = st.selectbox("ブランド", brand_list, key="select_brand")
 
-# 選択されたブランドに基づく車両リストの取得
 if selected_brand:
     vehicle_data = selected_brands_data.get(selected_brand, {})
     vehicle_list = list(vehicle_data.keys())
@@ -144,30 +152,27 @@ if selected_vehicle:
     battery_default = float(preset["battery"])
     eff_default = float(preset["efficiency"])
 elif selected_category:
-    # 選択肢が空の場合のメッセージをよりコンパクトに表示
     st.info("モデルがありません。手動でパラメータを入力してください。", icon="ℹ️")
 
 
-# --- UI境界線 ---
-st.markdown("---")
-
-
+# --- 走行距離予測のために、入力項目をさらに上部に集約 ---
 # ===========================
-# 2. 充電設定と3. 充電時間入力（全て横並びにして高さを詰める）
+# 2. 充電設定と3. 充電時間入力
 # ===========================
-st.subheader("2. 充電設定")
+st.markdown("##### 2. 充電設定と時間入力")
 
-col_power, col_time = st.columns([2, 1])
+# 項目を2段に分けず、可能な限り1段の横並びを優先
+col_power, col_time = st.columns([1, 1]) # 2列の割合を均等に変更
 
-# 2-1. 充電器の出力 (st.radioでボタン選択に変更)
+# 2-1. 充電器の出力 (st.radio)
 with col_power:
-    st.markdown("充電器の出力 (kW)") # st.radioのラベルを上に移動
+    st.markdown("充電器の出力 (kW)")
     charger_power = st.radio(
         "充電器の出力を選択 (kW)",
         [150, 90, 50, 30],
-        horizontal=True, # 横並び表示
+        horizontal=True,
         key="select_power",
-        label_visibility="collapsed" # st.radioのデフォルトラベルを非表示に
+        label_visibility="collapsed"
     )
 
 # 3. 充電時間入力
@@ -175,12 +180,16 @@ with col_time:
     charge_minutes = st.number_input("充電時間（分）", min_value=0, step=1, key="charge_min")
 
 
+# --- UI境界線 (予測結果を見やすくするため、この線は残す) ---
+st.markdown("---")
+
+
 # ===========================
 # 4. 走行距離予測 (最重要項目)
 # ===========================
-st.subheader("3. 走行距離予測")
+st.markdown("##### 3. 走行距離予測")
 
-# 安全チェック（電費が0の場合のゼロ除算を防ぐ）
+# 安全チェック
 if eff_default > 0 and charge_minutes >= 0:
     charge_hours = charge_minutes / 60
     energy_added = charger_power * charge_hours
@@ -192,23 +201,21 @@ if eff_default > 0 and charge_minutes >= 0:
         value=f"{possible_km:.1f} km",
         help="選択した充電時間と車両パラメータに基づく概算値です。",
     )
-    st.caption(f"（計算に使用された電費: {eff_default} kWh/100km）") # 補足情報もコンパクトに
+    st.caption(f"（計算に使用された電費: {eff_default} kWh/100km）")
 elif charge_minutes < 0:
      st.error("充電時間には正の値を入力してください。")
 else:
     st.warning("計算に必要なデータが不足しています。")
 
 
-# --- UI境界線 ---
+# --- 以降は重要度の低いフッター領域 ---
 st.markdown("---")
-
 
 # ===========================
 # 5. 車両パラメータ (カスタム入力)
 # ===========================
-st.subheader("4. 車両パラメータ（カスタム入力）")
+st.markdown("##### 4. 車両パラメータ（カスタム入力）")
 
-# 入力欄を2列に分けてコンパクトに
 col_param1, col_param2 = st.columns(2)
 
 with col_param1:
@@ -235,8 +242,8 @@ with col_param2:
 # 免責事項・利用規約 (フッター)
 # ===========================
 st.markdown("---")
-st.subheader("利用規約・免責事項")
-# (以下、変更なし)
+st.markdown("##### 利用規約・免責事項")
+
 st.markdown("""
 <div style="border: 1px solid #ccc; padding: 15px; border-radius: 5px;">
 <p>
