@@ -1,13 +1,10 @@
 import streamlit as st
 
 # ===========================
-# 車種プリセット (分類とネスト構造に追加)
+# 車種プリセット (分類修正: Hyundaiを「輸入車」に移動)
 # ===========================
 vehicle_presets = {
     "国産車": {
-        "Hyundai": {
-            "IONIQ 5 (Voyage)": {"battery": 58.0, "efficiency": 15.6},
-        },
         "Lexus": {
             "RZ 450e": {"battery": 71.4, "efficiency": 16.7},
         },
@@ -33,6 +30,9 @@ vehicle_presets = {
         "BMW": {
             "i4 eDrive40": {"battery": 83.9, "efficiency": 16.7},
             "iX3 M Sport": {"battery": 80.0, "efficiency": 17.5},
+        },
+        "Hyundai": { # 韓国メーカーのため輸入車に移動
+            "IONIQ 5 (Voyage)": {"battery": 58.0, "efficiency": 15.6},
         },
         "Jaguar": {
             "I-PACE S EV400": {"battery": 90.0, "efficiency": 20.3},
@@ -73,12 +73,26 @@ vehicle_presets = {
 st.markdown("""
 <style>
 body { font-family: sans-serif; }
-/* st.radio の縦の隙間を減らしてコンパクトにする */
+/* st.radio の縦の隙間を減らす */
 div[data-testid="stRadio"] label {
     margin: 0 !important;
 }
 div[data-testid="stRadio"] > div {
     gap: 0.5rem; /* ボタン間のスペース調整 */
+}
+/* subheaderの上下の余白を減らして高さを詰める */
+.st-emotion-cache-10trblm { 
+    padding-top: 0rem !important;
+    padding-bottom: 0.5rem !important;
+}
+/* 全体の余白を減らす（特にモバイル対応） */
+.st-emotion-cache-z5rd5k { 
+    padding-top: 1rem !important;
+}
+/* selectboxのラベル表示を隠す (コンパクト化のため) */
+label[data-testid="stWidgetLabel"] {
+    font-size: 0.9em;
+    margin-bottom: 0.1rem;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -98,19 +112,21 @@ eff_default = 15.0
 # ===========================
 st.subheader("1. 車種プリセットを選択")
 
+# 選択肢を全て3列の横並びにして高さを詰める
+col1, col2, col3 = st.columns(3)
+
 # 1-1. 分類選択 (国産車/輸入車)
-col1, col2 = st.columns(2)
 with col1:
     category_list = list(vehicle_presets.keys())
-    selected_category = st.selectbox("分類", category_list)
+    selected_category = st.selectbox("分類", category_list, key="select_category")
 
 # 選択された分類に基づくブランドリストの取得
 selected_brands_data = vehicle_presets.get(selected_category, {})
 brand_list = sorted(list(selected_brands_data.keys()))
 
+# 1-2. ブランド選択
 with col2:
-    # 1-2. ブランド選択
-    selected_brand = st.selectbox("ブランド", brand_list)
+    selected_brand = st.selectbox("ブランド", brand_list, key="select_brand")
 
 # 選択されたブランドに基づく車両リストの取得
 if selected_brand:
@@ -120,39 +136,47 @@ else:
     vehicle_list = []
 
 # 1-3. 車両選択
-selected_vehicle = st.selectbox("車両モデル", vehicle_list)
+with col3:
+    selected_vehicle = st.selectbox("車両モデル", vehicle_list, key="select_vehicle")
 
 if selected_vehicle:
     preset = vehicle_data[selected_vehicle]
     battery_default = float(preset["battery"])
     eff_default = float(preset["efficiency"])
 elif selected_category:
-    st.info("選択した分類/ブランドに該当する車両がありません。手動でパラメータを入力してください。")
+    # 選択肢が空の場合のメッセージをよりコンパクトに表示
+    st.info("モデルがありません。手動でパラメータを入力してください。", icon="ℹ️")
 
 
-# --- UI境界線 (表示領域の調整) ---
+# --- UI境界線 ---
 st.markdown("---")
 
+
 # ===========================
-# 2. 充電設定
+# 2. 充電設定と3. 充電時間入力（全て横並びにして高さを詰める）
 # ===========================
 st.subheader("2. 充電設定")
 
+col_power, col_time = st.columns([2, 1])
+
 # 2-1. 充電器の出力 (st.radioでボタン選択に変更)
-charger_power = st.radio(
-    "充電器の出力を選択 (kW)",
-    [150, 90, 50, 30],
-    horizontal=True # 横並び表示
-)
+with col_power:
+    st.markdown("充電器の出力 (kW)") # st.radioのラベルを上に移動
+    charger_power = st.radio(
+        "充電器の出力を選択 (kW)",
+        [150, 90, 50, 30],
+        horizontal=True, # 横並び表示
+        key="select_power",
+        label_visibility="collapsed" # st.radioのデフォルトラベルを非表示に
+    )
 
-# ===========================
 # 3. 充電時間入力
-# ===========================
-charge_minutes = st.number_input("充電時間（分）", min_value=0, step=1, key="charge_min")
+with col_time:
+    charge_minutes = st.number_input("充電時間（分）", min_value=0, step=1, key="charge_min")
 
 
 # ===========================
-# 4. 走行距離予測
+# 4. 走行距離予測 (最重要項目)
 # ===========================
 st.subheader("3. 走行距離予測")
 
@@ -162,12 +186,13 @@ if eff_default > 0 and charge_minutes >= 0:
     energy_added = charger_power * charge_hours
     possible_km = (energy_added / eff_default) * 100
     
-    # 計算結果の表示を強調
+    # 計算結果を最も目立つように表示
     st.metric(
         label="走行可能距離（予測）",
         value=f"{possible_km:.1f} km",
         help="選択した充電時間と車両パラメータに基づく概算値です。",
     )
+    st.caption(f"（計算に使用された電費: {eff_default} kWh/100km）") # 補足情報もコンパクトに
 elif charge_minutes < 0:
      st.error("充電時間には正の値を入力してください。")
 else:
@@ -207,11 +232,11 @@ with col_param2:
 
 
 # ===========================
-# 免責事項・利用規約
+# 免責事項・利用規約 (フッター)
 # ===========================
 st.markdown("---")
 st.subheader("利用規約・免責事項")
-
+# (以下、変更なし)
 st.markdown("""
 <div style="border: 1px solid #ccc; padding: 15px; border-radius: 5px;">
 <p>
