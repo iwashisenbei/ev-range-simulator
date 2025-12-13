@@ -1,82 +1,97 @@
 import streamlit as st
 
 # ===========================
-# 車種プリセット (変更なし)
+# 車種プリセット (分類を廃止し、ブランド > 車両 の2階層に戻す)
 # ===========================
 vehicle_presets = {
-    "国産車": {
-        "Lexus": {
-            "RZ 450e": {"battery": 71.4, "efficiency": 16.7},
-        },
-        "Mazda": {
-            "MX-30 EV MODEL": {"battery": 35.5, "efficiency": 15.9},
-        },
-        "Nissan": {
-            "Ariya": {"battery": 66.0, "efficiency": 18.0},
-            "Leaf": {"battery": 40.0, "efficiency": 15.0},
-            "Sakura S": {"battery": 20.0, "efficiency": 12.4},
-        },
-        "Subaru": {
-            "SOLTERRA ET-HS": {"battery": 71.4, "efficiency": 16.7},
-        },
-        "Toyota": {
-            "bZ4X Z": {"battery": 71.4, "efficiency": 16.7},
-        },
+    # Audi
+    "Audi": {
+        "e-tron Sportback 55": {"battery": 95.0, "efficiency": 23.3},
     },
-    "輸入車": {
-        "Audi": {
-            "e-tron Sportback 55": {"battery": 95.0, "efficiency": 23.3},
-        },
-        "BMW": {
-            "i4 eDrive40": {"battery": 83.9, "efficiency": 16.7},
-            "iX3 M Sport": {"battery": 80.0, "efficiency": 17.5},
-        },
-        "Hyundai": {
-            "IONIQ 5 (Voyage)": {"battery": 58.0, "efficiency": 15.6},
-        },
-        "Jaguar": {
-            "I-PACE S EV400": {"battery": 90.0, "efficiency": 20.3},
-        },
-        "Mercedes-Benz": {
-            "EQA 250": {"battery": 66.5, "efficiency": 16.3},
-            "EQB 250": {"battery": 66.5, "efficiency": 18.1},
-            "EQE 350+": {"battery": 90.6, "efficiency": 17.2},
-            "EQS 450+": {"battery": 107.8, "efficiency": 17.0},
-        },
-        "MINI": {
-            "MINI COOPER S E": {"battery": 32.6, "efficiency": 16.6},
-        },
-        "Peugeot": {
-            "e-208 Allure": {"battery": 50.0, "efficiency": 15.9},
-            "e-2008 GT": {"battery": 50.0, "efficiency": 16.8},
-            "e-RIFTER": {"battery": 50.0, "efficiency": 21.0},
-        },
-        "Porsche": {
-            "Taycan 4S": {"battery": 79.2, "efficiency": 23.8},
-        },
-        "Tesla": {
-            "Model 3 LR": {"battery": 78.1, "efficiency": 14.9},
-            "Model 3 SR": {"battery": 57.5, "efficiency": 14.5},
-            "Model Y RWD": {"battery": 57.5, "efficiency": 16.7},
-        },
-        "Volvo": {
-            "C40 Recharge Ultimate": {"battery": 78.0, "efficiency": 18.0},
-            "EX30 Single Motor": {"battery": 51.0, "efficiency": 16.7},
-            "XC40 Recharge Ultimate": {"battery": 78.0, "efficiency": 18.0},
-        },
+    # BMW
+    "BMW": {
+        "i4 eDrive40": {"battery": 83.9, "efficiency": 16.7},
+        "iX3 M Sport": {"battery": 80.0, "efficiency": 17.5},
+    },
+    # Hyundai
+    "Hyundai": {
+        "IONIQ 5 (Voyage)": {"battery": 58.0, "efficiency": 15.6},
+    },
+    # Jaguar
+    "Jaguar": {
+        "I-PACE S EV400": {"battery": 90.0, "efficiency": 20.3},
+    },
+    # Lexus
+    "Lexus": {
+        "RZ 450e": {"battery": 71.4, "efficiency": 16.7},
+    },
+    # Mazda
+    "Mazda": {
+        "MX-30 EV MODEL": {"battery": 35.5, "efficiency": 15.9},
+    },
+    # Mercedes-Benz
+    "Mercedes-Benz": {
+        "EQA 250": {"battery": 66.5, "efficiency": 16.3},
+        "EQB 250": {"battery": 66.5, "efficiency": 18.1},
+        "EQE 350+": {"battery": 90.6, "efficiency": 17.2},
+        "EQS 450+": {"battery": 107.8, "efficiency": 17.0},
+    },
+    # MINI
+    "MINI": {
+        "MINI COOPER S E": {"battery": 32.6, "efficiency": 16.6},
+    },
+    # Nissan
+    "Nissan": {
+        "Ariya": {"battery": 66.0, "efficiency": 18.0},
+        "Leaf": {"battery": 40.0, "efficiency": 15.0},
+        "Sakura S": {"battery": 20.0, "efficiency": 12.4},
+    },
+    # Peugeot
+    "Peugeot": {
+        "e-208 Allure": {"battery": 50.0, "efficiency": 15.9},
+        "e-2008 GT": {"battery": 50.0, "efficiency": 16.8},
+        "e-RIFTER": {"battery": 50.0, "efficiency": 21.0},
+    },
+    # Porsche
+    "Porsche": {
+        "Taycan 4S": {"battery": 79.2, "efficiency": 23.8},
+    },
+    # Subaru
+    "Subaru": {
+        "SOLTERRA ET-HS": {"battery": 71.4, "efficiency": 16.7},
+    },
+    # Tesla
+    "Tesla": {
+        "Model 3 LR": {"battery": 78.1, "efficiency": 14.9},
+        "Model 3 SR": {"battery": 57.5, "efficiency": 14.5},
+        "Model Y RWD": {"battery": 57.5, "efficiency": 16.7},
+    },
+    # Toyota
+    "Toyota": {
+        "bZ4X Z": {"battery": 71.4, "efficiency": 16.7},
+    },
+    # Volvo
+    "Volvo": {
+        "C40 Recharge Ultimate": {"battery": 78.0, "efficiency": 18.0},
+        "EX30 Single Motor": {"battery": 51.0, "efficiency": 16.7},
+        "XC40 Recharge Ultimate": {"battery": 78.0, "efficiency": 18.0},
     },
 }
 
 # ===========================
-# UI のスタイル (タイトル改行抑制と余白の極限削減)
+# UI のスタイル (タイトル改行指定と余白の極限削減)
 # ===========================
 st.markdown("""
 <style>
-/* タイトルのフォントサイズを調整し、改行を防ぐ */
-h1 {
-    font-size: 2.1rem; /* 標準より少し小さく */
-    white-space: nowrap; /* 強制的に改行させない */
+/* h1要素を非表示にして、h2要素でタイトルを表現する */
+h1 { display: none; } 
+/* st.markdown("## EV走行距離<br>シミュレーター") 用のスタイル */
+h2 { 
+    font-size: 2.3rem; 
+    line-height: 1.1; 
+    margin-bottom: 0.5rem; /* タイトル下の余白を調整 */
 }
+
 /* subheaderやst.titleの上下の余白を極限まで減らす */
 .st-emotion-cache-10trblm { 
     padding-top: 0rem !important;
@@ -109,9 +124,9 @@ label[data-testid="stWidgetLabel"] {
 """, unsafe_allow_html=True)
 
 # ===========================
-# タイトル
+# タイトル (Markdownで改行を強制)
 # ===========================
-st.title("EV走行距離シミュレーター")
+st.markdown("## EV走行距離<br>シミュレーター", unsafe_allow_html=True)
 
 # 初期値設定
 battery_default = 0.0
@@ -119,40 +134,36 @@ eff_default = 15.0
 
 
 # ===========================
-# 1. 車種プリセット (3段階選択)
+# 1. 車種プリセット (2段階選択に戻す)
 # ===========================
-st.markdown("##### 1. 車種プリセットを選択") # st.subheaderの代わりにmarkdownで高さを詰める
+st.markdown("##### 1. 車種プリセットを選択")
 
-col1, col2, col3 = st.columns(3)
+brand_list = sorted(list(vehicle_presets.keys()))
 
-# 1-1. 分類選択
+# 選択肢を2列の横並びにして高さを詰める
+col1, col2 = st.columns(2)
+
+# 1-1. ブランド選択
 with col1:
-    category_list = list(vehicle_presets.keys())
-    selected_category = st.selectbox("分類", category_list, key="select_category")
-
-selected_brands_data = vehicle_presets.get(selected_category, {})
-brand_list = sorted(list(selected_brands_data.keys()))
-
-# 1-2. ブランド選択
-with col2:
     selected_brand = st.selectbox("ブランド", brand_list, key="select_brand")
 
+# 選択されたブランドに基づく車両リストの取得
 if selected_brand:
-    vehicle_data = selected_brands_data.get(selected_brand, {})
+    vehicle_data = vehicle_presets.get(selected_brand, {})
     vehicle_list = list(vehicle_data.keys())
 else:
     vehicle_list = []
 
-# 1-3. 車両選択
-with col3:
+# 1-2. 車両選択
+with col2:
     selected_vehicle = st.selectbox("車両モデル", vehicle_list, key="select_vehicle")
 
 if selected_vehicle:
     preset = vehicle_data[selected_vehicle]
     battery_default = float(preset["battery"])
     eff_default = float(preset["efficiency"])
-elif selected_category:
-    st.info("モデルがありません。手動でパラメータを入力してください。", icon="ℹ️")
+else:
+    st.info("モデルを選択してください。", icon="ℹ️")
 
 
 # --- 走行距離予測のために、入力項目をさらに上部に集約 ---
@@ -162,7 +173,7 @@ elif selected_category:
 st.markdown("##### 2. 充電設定と時間入力")
 
 # 項目を2段に分けず、可能な限り1段の横並びを優先
-col_power, col_time = st.columns([1, 1]) # 2列の割合を均等に変更
+col_power, col_time = st.columns([1, 1])
 
 # 2-1. 充電器の出力 (st.radio)
 with col_power:
@@ -180,7 +191,7 @@ with col_time:
     charge_minutes = st.number_input("充電時間（分）", min_value=0, step=1, key="charge_min")
 
 
-# --- UI境界線 (予測結果を見やすくするため、この線は残す) ---
+# --- UI境界線 ---
 st.markdown("---")
 
 
