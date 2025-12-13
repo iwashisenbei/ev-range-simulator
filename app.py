@@ -1,76 +1,62 @@
 import streamlit as st
 
 # ===========================
-# 車種プリセット (分類を廃止し、ブランド > 車両 の2階層に戻す)
+# 車種プリセット (略：変更なし)
 # ===========================
 vehicle_presets = {
-    # Audi
+    # ... (前回のコードのvehicle_presetsの内容をそのまま使用) ...
     "Audi": {
         "e-tron Sportback 55": {"battery": 95.0, "efficiency": 23.3},
     },
-    # BMW
     "BMW": {
         "i4 eDrive40": {"battery": 83.9, "efficiency": 16.7},
         "iX3 M Sport": {"battery": 80.0, "efficiency": 17.5},
     },
-    # Hyundai
     "Hyundai": {
         "IONIQ 5 (Voyage)": {"battery": 58.0, "efficiency": 15.6},
     },
-    # Jaguar
     "Jaguar": {
         "I-PACE S EV400": {"battery": 90.0, "efficiency": 20.3},
     },
-    # Lexus
     "Lexus": {
         "RZ 450e": {"battery": 71.4, "efficiency": 16.7},
     },
-    # Mazda
     "Mazda": {
         "MX-30 EV MODEL": {"battery": 35.5, "efficiency": 15.9},
     },
-    # Mercedes-Benz
     "Mercedes-Benz": {
         "EQA 250": {"battery": 66.5, "efficiency": 16.3},
         "EQB 250": {"battery": 66.5, "efficiency": 18.1},
         "EQE 350+": {"battery": 90.6, "efficiency": 17.2},
         "EQS 450+": {"battery": 107.8, "efficiency": 17.0},
     },
-    # MINI
     "MINI": {
         "MINI COOPER S E": {"battery": 32.6, "efficiency": 16.6},
     },
-    # Nissan
     "Nissan": {
         "Ariya": {"battery": 66.0, "efficiency": 18.0},
         "Leaf": {"battery": 40.0, "efficiency": 15.0},
         "Sakura S": {"battery": 20.0, "efficiency": 12.4},
     },
-    # Peugeot
     "Peugeot": {
         "e-208 Allure": {"battery": 50.0, "efficiency": 15.9},
         "e-2008 GT": {"battery": 50.0, "efficiency": 16.8},
         "e-RIFTER": {"battery": 50.0, "efficiency": 21.0},
     },
-    # Porsche
     "Porsche": {
         "Taycan 4S": {"battery": 79.2, "efficiency": 23.8},
     },
-    # Subaru
     "Subaru": {
         "SOLTERRA ET-HS": {"battery": 71.4, "efficiency": 16.7},
     },
-    # Tesla
     "Tesla": {
         "Model 3 LR": {"battery": 78.1, "efficiency": 14.9},
         "Model 3 SR": {"battery": 57.5, "efficiency": 14.5},
         "Model Y RWD": {"battery": 57.5, "efficiency": 16.7},
     },
-    # Toyota
     "Toyota": {
         "bZ4X Z": {"battery": 71.4, "efficiency": 16.7},
     },
-    # Volvo
     "Volvo": {
         "C40 Recharge Ultimate": {"battery": 78.0, "efficiency": 18.0},
         "EX30 Single Motor": {"battery": 51.0, "efficiency": 16.7},
@@ -79,20 +65,17 @@ vehicle_presets = {
 }
 
 # ===========================
-# UI のスタイル (タイトル改行指定と余白の極限削減)
+# UI のスタイル (略：変更なし)
 # ===========================
 st.markdown("""
 <style>
-/* h1要素を非表示にして、h2要素でタイトルを表現する */
+/* ... (カスタムCSSの内容をそのまま使用) ... */
 h1 { display: none; } 
-/* st.markdown("## EV走行距離<br>シミュレーター") 用のスタイル */
 h2 { 
     font-size: 2.3rem; 
     line-height: 1.1; 
-    margin-bottom: 0.5rem; /* タイトル下の余白を調整 */
+    margin-bottom: 0.5rem;
 }
-
-/* subheaderやst.titleの上下の余白を極限まで減らす */
 .st-emotion-cache-10trblm { 
     padding-top: 0rem !important;
     padding-bottom: 0.5rem !important;
@@ -101,19 +84,16 @@ h2 {
     padding-top: 0.5rem !important;
     padding-bottom: 0.5rem !important;
 }
-/* st.radio の縦の隙間を減らす */
 div[data-testid="stRadio"] label {
     margin: 0 !important;
 }
 div[data-testid="stRadio"] > div {
     gap: 0.5rem;
 }
-/* selectboxのラベル表示を隠す (コンパクト化のため) */
 label[data-testid="stWidgetLabel"] {
     font-size: 0.9em;
     margin-bottom: 0.1rem;
 }
-/* 走行距離予測の結果（st.metric）のラベルと値の余白を詰める */
 [data-testid="stMetricLabel"] {
     padding-bottom: 0px !important;
 }
@@ -124,7 +104,7 @@ label[data-testid="stWidgetLabel"] {
 """, unsafe_allow_html=True)
 
 # ===========================
-# タイトル (Markdownで改行を強制)
+# タイトル
 # ===========================
 st.markdown("## EV走行距離<br>シミュレーター", unsafe_allow_html=True)
 
@@ -134,20 +114,18 @@ eff_default = 15.0
 
 
 # ===========================
-# 1. 車種プリセット (2段階選択に戻す)
+# 1. 車種プリセット (2段階選択)
 # ===========================
 st.markdown("##### 1. 車種プリセットを選択")
 
 brand_list = sorted(list(vehicle_presets.keys()))
 
-# 選択肢を2列の横並びにして高さを詰める
 col1, col2 = st.columns(2)
 
 # 1-1. ブランド選択
 with col1:
     selected_brand = st.selectbox("ブランド", brand_list, key="select_brand")
 
-# 選択されたブランドに基づく車両リストの取得
 if selected_brand:
     vehicle_data = vehicle_presets.get(selected_brand, {})
     vehicle_list = list(vehicle_data.keys())
@@ -166,13 +144,11 @@ else:
     st.info("モデルを選択してください。", icon="ℹ️")
 
 
-# --- 走行距離予測のために、入力項目をさらに上部に集約 ---
 # ===========================
 # 2. 充電設定と3. 充電時間入力
 # ===========================
 st.markdown("##### 2. 充電設定と時間入力")
 
-# 項目を2段に分けず、可能な限り1段の横並びを優先
 col_power, col_time = st.columns([1, 1])
 
 # 2-1. 充電器の出力 (st.radio)
@@ -196,15 +172,31 @@ st.markdown("---")
 
 
 # ===========================
-# 4. 走行距離予測 (最重要項目)
+# 4. 走行距離予測 (バッテリー容量による制限を追加)
 # ===========================
 st.markdown("##### 3. 走行距離予測")
 
+# パラメータは、プリセット選択値かカスタム入力値のどちらかを使用
+current_battery = st.session_state.get('battery', battery_default)
+current_eff = st.session_state.get('eff', eff_default)
+
+
 # 安全チェック
-if eff_default > 0 and charge_minutes >= 0:
+if current_eff > 0 and charge_minutes >= 0 and current_battery > 0:
+    
     charge_hours = charge_minutes / 60
-    energy_added = charger_power * charge_hours
-    possible_km = (energy_added / eff_default) * 100
+    
+    # 【変更点 A】充電時間に基づいた計算上の追加エネルギー量
+    calculated_energy_added = charger_power * charge_hours
+    
+    # 【変更点 B】バッテリー容量を超えないようにエネルギー量を制限する
+    energy_added_final = min(calculated_energy_added, current_battery)
+    
+    # 制限がかかったかどうかのチェック
+    is_limited = energy_added_final < calculated_energy_added
+    
+    # 走行可能距離の計算
+    possible_km = (energy_added_final / current_eff) * 100
     
     # 計算結果を最も目立つように表示
     st.metric(
@@ -212,9 +204,16 @@ if eff_default > 0 and charge_minutes >= 0:
         value=f"{possible_km:.1f} km",
         help="選択した充電時間と車両パラメータに基づく概算値です。",
     )
-    st.caption(f"（計算に使用された電費: {eff_default} kWh/100km）")
+    
+    if is_limited:
+        st.caption(f"⚠️ **バッテリー容量 ({current_battery:.1f} kWh) で制限されています。**")
+    
+    st.caption(f"（計算に使用された電費: {current_eff:.1f} kWh/100km）")
+
 elif charge_minutes < 0:
      st.error("充電時間には正の値を入力してください。")
+elif current_battery <= 0:
+    st.error("バッテリー容量を正しく入力してください。")
 else:
     st.warning("計算に必要なデータが不足しています。")
 
@@ -222,30 +221,35 @@ else:
 # --- 以降は重要度の低いフッター領域 ---
 st.markdown("---")
 
+
 # ===========================
-# 5. 車両パラメータ (カスタム入力)
+# 5. 車両パラメータ (カスタム入力) (keyを追加し、セッションステートで値を受け渡す)
 # ===========================
 st.markdown("##### 4. 車両パラメータ（カスタム入力）")
 
 col_param1, col_param2 = st.columns(2)
 
 with col_param1:
+    # keyを設定し、セッションステートで値が保持されるようにする
     battery = st.number_input(
         "バッテリー容量（kWh）", 
         value=battery_default, 
         min_value=1.0, 
         step=0.1,
-        format="%.1f"
+        format="%.1f",
+        key="battery" 
     )
 
 with col_param2:
+    # keyを設定し、セッションステートで値が保持されるようにする
     eff = st.number_input(
         "電費（kWh/100km）", 
         value=eff_default, 
         min_value=1.0, 
         max_value=50.0, 
         step=0.1,
-        format="%.1f"
+        format="%.1f",
+        key="eff"
     )
 
 
