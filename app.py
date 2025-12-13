@@ -126,6 +126,7 @@ col1, col2 = st.columns(2)
 with col1:
     selected_brand = st.selectbox("ブランド", brand_list, key="select_brand")
 
+# 選択されたブランドに基づく車両リストの取得
 if selected_brand:
     vehicle_data = vehicle_presets.get(selected_brand, {})
     vehicle_list = list(vehicle_data.keys())
@@ -143,6 +144,19 @@ if selected_vehicle:
 else:
     st.info("モデルを選択してください。", icon="ℹ️")
 
+
+# **【修正 A】プリセット選択値とカスタム入力値を統合する**
+# プリセットが選択された場合、カスタム入力の初期値をセッションステートに設定し直す。
+# これにより、カスタム入力欄と計算ロジックがプリセット値で確実に更新される。
+if selected_vehicle:
+    if 'battery' not in st.session_state or st.session_state.battery != battery_default:
+        st.session_state.battery = battery_default
+    if 'eff' not in st.session_state or st.session_state.eff != eff_default:
+        st.session_state.eff = eff_default
+elif 'battery' not in st.session_state:
+    # 初回アクセス時など、セッションステートが存在しない場合の初期化
+    st.session_state.battery = battery_default
+    st.session_state.eff = eff_default
 
 # ===========================
 # 2. 充電設定と3. 充電時間入力
@@ -172,13 +186,13 @@ st.markdown("---")
 
 
 # ===========================
-# 4. 走行距離予測 (バッテリー容量による制限を追加)
+# 4. 走行距離予測 (修正後の計算ロジック)
 # ===========================
 st.markdown("##### 3. 走行距離予測")
 
-# パラメータは、プリセット選択値かカスタム入力値のどちらかを使用
-current_battery = st.session_state.get('battery', battery_default)
-current_eff = st.session_state.get('eff', eff_default)
+# **【修正 B】計算には必ずセッションステートの値（カスタム入力欄の値）を使用する**
+current_battery = st.session_state.battery
+current_eff = st.session_state.eff
 
 
 # 安全チェック
@@ -186,10 +200,10 @@ if current_eff > 0 and charge_minutes >= 0 and current_battery > 0:
     
     charge_hours = charge_minutes / 60
     
-    # 【変更点 A】充電時間に基づいた計算上の追加エネルギー量
+    # 充電時間に基づいた計算上の追加エネルギー量
     calculated_energy_added = charger_power * charge_hours
     
-    # 【変更点 B】バッテリー容量を超えないようにエネルギー量を制限する
+    # バッテリー容量を超えないようにエネルギー量を制限する
     energy_added_final = min(calculated_energy_added, current_battery)
     
     # 制限がかかったかどうかのチェック
@@ -208,6 +222,7 @@ if current_eff > 0 and charge_minutes >= 0 and current_battery > 0:
     if is_limited:
         st.caption(f"⚠️ **バッテリー容量 ({current_battery:.1f} kWh) で制限されています。**")
     
+    # 修正により、選択した車両の電費が正しく表示される
     st.caption(f"（計算に使用された電費: {current_eff:.1f} kWh/100km）")
 
 elif charge_minutes < 0:
@@ -223,17 +238,18 @@ st.markdown("---")
 
 
 # ===========================
-# 5. 車両パラメータ (カスタム入力) (keyを追加し、セッションステートで値を受け渡す)
+# 5. 車両パラメータ (カスタム入力)
 # ===========================
 st.markdown("##### 4. 車両パラメータ（カスタム入力）")
 
 col_param1, col_param2 = st.columns(2)
 
 with col_param1:
-    # keyを設定し、セッションステートで値が保持されるようにする
+    # プリセットが選択されると、この入力欄の値がセッションステートを通じて自動更新される
     battery = st.number_input(
         "バッテリー容量（kWh）", 
-        value=battery_default, 
+        # value引数ではなく、st.session_state.battery を初期値として使用
+        value=st.session_state.battery, 
         min_value=1.0, 
         step=0.1,
         format="%.1f",
@@ -241,10 +257,11 @@ with col_param1:
     )
 
 with col_param2:
-    # keyを設定し、セッションステートで値が保持されるようにする
+    # プリセットが選択されると、この入力欄の値がセッションステートを通じて自動更新される
     eff = st.number_input(
         "電費（kWh/100km）", 
-        value=eff_default, 
+        # value引数ではなく、st.session_state.eff を初期値として使用
+        value=st.session_state.eff, 
         min_value=1.0, 
         max_value=50.0, 
         step=0.1,
